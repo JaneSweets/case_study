@@ -1,0 +1,98 @@
+---
+title: "Case Study"
+author: "Shaolei Ma"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r libraries}
+library(tidyverse)
+library(ggridges)
+library(leaflet)
+```
+
+
+```{r}
+library(p8105.datasets)
+
+data(nyc_airbnb)
+
+nyc_airbnb =
+  nyc_airbnb |> 
+  rename(borough = neighbourhood_group) |> 
+  mutate(stars = review_scores_location / 2)
+```
+
+## Brainstorm questions
+
+```{r}
+nyc_airbnb |> 
+  count(borough, neighbourhood, room_type, sort = T)
+```
+
+## Do some EDA
+
+```{r}
+nyc_airbnb |> 
+  count(borough)
+```
+
+```{r}
+nyc_airbnb |> 
+  group_by(borough, room_type) |> 
+  summarise(mean_price = mean(price)) |> 
+  pivot_wider(
+    names_from = room_type,
+    values_from = mean_price
+  )
+```
+
+```{r}
+nyc_airbnb |> 
+  ggplot(aes(x = price)) +
+  geom_histogram() +
+  facet_grid(borough ~ room_type)
+```
+
+```{r}
+nyc_airbnb |> 
+  filter(
+    price < 1000,
+    room_type == "Entire home/apt",
+    borough == "Manhattan"
+  ) |> 
+  mutate(neighbourhood = fct_reorder(neighbourhood, price)) |> 
+  ggplot(aes(y = neighbourhood, x = price)) +
+  geom_density_ridges()
+```
+
+## Try to make a map
+
+```{r}
+nyc_airbnb |> 
+  filter(
+    price < 1000,
+    room_type == "Entire home/apt",
+    borough == "Manhattan"
+  ) |> 
+  ggplot(aes(x = lat, y = long, color = price)) +
+  geom_point()
+```
+
+Try something else entirely.
+
+```{r}
+nyc_airbnb |> 
+  filter(
+    price < 1000,
+    room_type == "Entire home/apt",
+    borough == "Manhattan"
+  ) |> 
+  sample_n(500) |> 
+  leaflet() |> 
+  #addTiles() |> 
+  addProviderTiles(providers$CartoDB.Positron) |> 
+  # addMarkers(~long, ~lat)
+  addCircleMarkers(~long, ~lat, radius = .5)
+```
+
